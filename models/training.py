@@ -1,7 +1,36 @@
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
-from sklearn.model_selection import train_test_split
+from torch.utils.data import Dataset
 import logging
+
+
+class CustomDataset(Dataset):
+    def __init__(self, texts, labels, tokenizer, max_len):
+        self.texts = texts
+        self.labels = labels
+        self.tokenizer = tokenizer
+        self.max_len = max_len
+
+    def __len__(self):
+        return len(self.texts)
+
+    def __getitem__(self, idx):
+        text = self.texts[idx]
+        label = self.labels[idx]
+
+        encoding = self.tokenizer(
+            text,
+            max_length=self.max_len,
+            padding='max_length',
+            truncation=True,
+            return_tensors='pt'
+        )
+
+        return {
+            'input_ids': encoding['input_ids'].flatten(),
+            'attention_mask': encoding['attention_mask'].flatten(),
+            'labels': torch.tensor(label, dtype=torch.long)
+        }
 
 
 def train_model(data, labeled_data):
@@ -20,16 +49,12 @@ def train_model(data, labeled_data):
             labels.append(label_mapping[label])
 
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-    inputs = tokenizer(texts, return_tensors="pt", padding=True, truncation=True, max_length=512)
-    labels = torch.tensor(labels)
+    dataset = CustomDataset(texts, labels, tokenizer, max_len=512)
 
     # Train/test split
-    train_size = int(0.8 * len(texts))
-    val_size = len(texts) - train_size
-    train_dataset = torch.utils.data.TensorDataset(inputs['input_ids'][:train_size],
-                                                   inputs['attention_mask'][:train_size], labels[:train_size])
-    val_dataset = torch.utils.data.TensorDataset(inputs['input_ids'][train_size:],
-                                                 inputs['attention_mask'][train_size:], labels[train_size:])
+    train_size = int(0.8 * len(dataset))
+    val_size = len(dataset) - train_size
+    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
 
     # Define model
     model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=len(label_mapping))

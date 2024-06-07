@@ -1,6 +1,6 @@
-import logging
-
 import torch
+from transformers import BertTokenizer, BertForSequenceClassification
+import logging
 
 
 def classify_emails(data, model, tokenizer):
