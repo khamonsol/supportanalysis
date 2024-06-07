@@ -1,7 +1,12 @@
+import collections
+
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
-from .dataset import CustomDataset
+from sklearn.model_selection import train_test_split
+
 import logging
+
+from models.dataset import CustomDataset
 
 
 def train_model(data, labeled_data):
@@ -20,12 +25,19 @@ def train_model(data, labeled_data):
             labels.append(label_mapping[label])
 
     tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-    dataset = CustomDataset(texts, labels, tokenizer, max_len=512)
+    inputs = tokenizer(texts, return_tensors="pt", padding=True, truncation=True, max_length=512)
+    labels = torch.tensor(labels)
 
-    # Train/test split
-    train_size = int(0.8 * len(dataset))
-    val_size = len(dataset) - train_size
-    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
+    # Check label distribution
+    label_counts = collections.Counter(labels.numpy())
+    for label, count in label_counts.items():
+        logging.info(f"Label {label}: {count} examples")
+
+    # Stratified train/test split
+    train_texts, val_texts, train_labels, val_labels = train_test_split(texts, labels, test_size=0.2, stratify=labels)
+
+    train_dataset = CustomDataset(train_texts, train_labels, tokenizer, max_len=512)
+    val_dataset = CustomDataset(val_texts, val_labels, tokenizer, max_len=512)
 
     # Define model
     model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=len(label_mapping))
@@ -34,8 +46,8 @@ def train_model(data, labeled_data):
     # Training arguments
     training_args = TrainingArguments(
         output_dir='./results',
-        num_train_epochs=5,  # Increase the number of epochs
-        per_device_train_batch_size=16,  # Adjust batch size
+        num_train_epochs=5,
+        per_device_train_batch_size=16,
         per_device_eval_batch_size=16,
         warmup_steps=500,
         weight_decay=0.01,

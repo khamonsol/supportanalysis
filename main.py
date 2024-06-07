@@ -1,59 +1,54 @@
-from data.preprocessing import load_and_clean_data
-from models.training import train_model
-from models.bert_classifier import classify_emails
-from data.analysis import analyze_impact
-from evaluation.evaluation import evaluate_model
-from visualization.plots import plot_email_volume, plot_automation_impact
+import logging
+import pandas as pd
+from models.zero_shot_classifier import ZeroShotEmailClassifier
+from data.preprocessing import load_and_clean_data, classify_yes_energy_emails
 
 
-# Load and preprocess data
-data = load_and_clean_data('support_emails.csv')
+def main():
+    logging.basicConfig(level=logging.INFO)
 
-# Manually labeled data for initial training
-manually_labeled_data = {
-    'Onboarding': [
-        'signing NDA',
-        'ISO submission setup',
-        'new database user setup'
-    ],
-    'Beyond Web Support': [
-        'trouble loading web based reports in Beyond',
-        'access to reports'
-    ],
-    'Missing Data Collections': [
-        'missing awards submittals',
-        'missing invoices'
-    ],
-    'General IT Issues': [
-        'VPN access',
-        'shared drive access',
-        'general computer problems'
-    ],
-    'YES Energy': [
-        'YES energy issues'
-        'DPA upload to market '
-    ],
-    'Excel Uploader Support': [
-        'excel spreadsheets',
-        'upload to market'
-    ]
-}
+    # Load and clean data
+    file_path = 'support_emails.csv'
+    logging.info(f"Loading and cleaning data from {file_path}...")
+    data = load_and_clean_data(file_path)
 
-# Train the BERT model
-model, tokenizer = train_model(data, manually_labeled_data)
+    # Classify YES Energy emails and get remaining data
+    logging.info("Classifying YES Energy emails...")
+    remaining_data = classify_yes_energy_emails(data)
 
-# Classify emails using the trained BERT model
-data = classify_emails(data, model, tokenizer)
+    # Initialize classifier
+    classifier = ZeroShotEmailClassifier()
 
-# Analyze the potential impact of automation
-summary_df = analyze_impact(data)
+    # Perform classification based on dataset size
+    dataset_size = len(remaining_data)
+    emails = remaining_data['Body'].tolist()
+    subjects = remaining_data['Subject'].tolist()
+    recipients = remaining_data['Cleaned_Recipients'].tolist()
 
-# Save the classified emails to a new CSV file
-data.to_csv('classified_support_emails.csv', index=False)
+    if dataset_size < 100:
+        logging.info("Classifying using naive approach...")
+        classifications, confidences = classifier.classify_naive(emails, subjects, recipients)
+    elif 100 <= dataset_size < 1000:
+        logging.info("Classifying using batch mode...")
+        classifications, confidences = classifier.classify_batch_mode(emails, subjects, recipients)
+    else:
+        logging.info("Classifying using parallel approach...")
+        classifications, confidences = classifier.classify_parallel(emails, subjects, recipients)
 
-# Visualize the results
-plot_email_volume(summary_df)
-plot_automation_impact(summary_df)
+    # Update the remaining data with classifications and confidences
+    remaining_data['Category'] = classifications
+    remaining_data['Confidence'] = confidences
 
-# Evaluate the model
-evaluate_model(data, model, tokenizer)
+    # Combine YES Energy and remaining classified data
+    classified_data = pd.concat([data[data['Category'] == 'YES Energy'], remaining_data])
+
+    # Export classified data to a new CSV file
+    output_file = 'classified_support_emails.csv'
+    logging.info(f"Exporting classified data to {output_file}...")
+    classified_data.to_csv(output_file, index=False)
+
+    logging.info("Process completed.")
+
+
+if __name__ == '__main__':
+    main()

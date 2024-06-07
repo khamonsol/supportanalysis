@@ -1,5 +1,5 @@
-import torch
 from sklearn.metrics import classification_report
+import torch
 
 
 def evaluate_model(data, model, tokenizer):
@@ -9,12 +9,12 @@ def evaluate_model(data, model, tokenizer):
 
     texts = data['Body'].tolist()
     true_labels = data['Category'].map({
-        'Onboarding': 0,
-        'Beyond Web Support': 1,
-        'Missing Data Collections': 2,
-        'General IT Issues': 3,
-        'YES Energy': 4,
-        'Excel Uploader Support': 5
+        'onboarding': 0,
+        'beyond web support': 1,
+        'missing data collections': 2,
+        'general it issues': 3,
+        'yes energy': 4,
+        'excel uploader support': 5
     }).tolist()
 
     predictions = []
@@ -28,12 +28,12 @@ def evaluate_model(data, model, tokenizer):
         predicted_class_id = torch.argmax(logits, dim=1).item()
         predictions.append(predicted_class_id)
 
-    report = classification_report(true_labels, predictions, target_names=[
-        'Onboarding',
-        'Beyond Web Support',
-        'Missing Data Collections',
-        'General IT Issues',
-        'YES Energy',
-        'Excel Uploader Support'
-    ])
+    report = classification_report(true_labels, predictions, labels=[0, 1, 2, 3, 4, 5], target_names=[
+        'onboarding',
+        'beyond web support',
+        'missing data collections',
+        'general it issues',
+        'yes energy',
+        'excel uploader support'
+    ], zero_division=0)
     print(report)

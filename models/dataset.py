@@ -26,5 +26,5 @@ class CustomDataset(Dataset):
         return {
             'input_ids': encoding['input_ids'].flatten(),
             'attention_mask': encoding['attention_mask'].flatten(),
-            'labels': torch.tensor(label, dtype=torch.long)
+            'labels': label  # Directly use the label without converting it to tensor here
         }
