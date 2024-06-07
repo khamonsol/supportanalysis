@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 
-
 def plot_email_volume(summary_df):
     # Plot the volume of emails for each category
     plt.figure(figsize=(10, 6))
@@ -10,7 +9,6 @@ def plot_email_volume(summary_df):
     plt.title('Volume of Support Emails by Category')
     plt.xticks(rotation=45)
     plt.show()
-
 
 def plot_automation_impact(summary_df):
     # Plot the potential impact of automation

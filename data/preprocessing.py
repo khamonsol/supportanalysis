@@ -8,6 +8,8 @@ def load_and_clean_data(file_path):
 
     # Normalize and clean text data
     def clean_text(text):
+        if pd.isna(text):
+            return ""  # Return empty string for NaN values
         text = text.lower()  # Convert to lowercase
         text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
         return text
