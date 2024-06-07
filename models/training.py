@@ -1,10 +1,13 @@
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
 from sklearn.model_selection import train_test_split
+import logging
 
 
 def train_model(data, labeled_data):
+    logging.basicConfig(level=logging.INFO)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logging.info(f"Using device: {device}")
 
     # Prepare manually labeled data
     texts = []

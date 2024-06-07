@@ -1,8 +1,10 @@
+import logging
+
 import torch
-from transformers import BertTokenizer, BertForSequenceClassification
 
 
 def classify_emails(data, model, tokenizer):
+    logging.basicConfig(level=logging.INFO)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
     model.eval()
