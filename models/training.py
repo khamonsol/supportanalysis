@@ -1,36 +1,7 @@
 import torch
 from transformers import BertTokenizer, BertForSequenceClassification, Trainer, TrainingArguments
-from torch.utils.data import Dataset
+from .dataset import CustomDataset
 import logging
-
-
-class CustomDataset(Dataset):
-    def __init__(self, texts, labels, tokenizer, max_len):
-        self.texts = texts
-        self.labels = labels
-        self.tokenizer = tokenizer
-        self.max_len = max_len
-
-    def __len__(self):
-        return len(self.texts)
-
-    def __getitem__(self, idx):
-        text = self.texts[idx]
-        label = self.labels[idx]
-
-        encoding = self.tokenizer(
-            text,
-            max_length=self.max_len,
-            padding='max_length',
-            truncation=True,
-            return_tensors='pt'
-        )
-
-        return {
-            'input_ids': encoding['input_ids'].flatten(),
-            'attention_mask': encoding['attention_mask'].flatten(),
-            'labels': torch.tensor(label, dtype=torch.long)
-        }
 
 
 def train_model(data, labeled_data):
@@ -63,14 +34,15 @@ def train_model(data, labeled_data):
     # Training arguments
     training_args = TrainingArguments(
         output_dir='./results',
-        num_train_epochs=3,
-        per_device_train_batch_size=8,
-        per_device_eval_batch_size=8,
+        num_train_epochs=5,  # Increase the number of epochs
+        per_device_train_batch_size=16,  # Adjust batch size
+        per_device_eval_batch_size=16,
         warmup_steps=500,
         weight_decay=0.01,
         logging_dir='./logs',
         logging_steps=10,
-        evaluation_strategy="epoch"
+        evaluation_strategy="epoch",
+        save_strategy="epoch"
     )
 
     # Trainer

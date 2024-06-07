@@ -2,7 +2,9 @@ from data.preprocessing import load_and_clean_data
 from models.training import train_model
 from models.bert_classifier import classify_emails
 from data.analysis import analyze_impact
+from evaluation.evaluation import evaluate_model
 from visualization.plots import plot_email_volume, plot_automation_impact
+
 
 # Load and preprocess data
 data = load_and_clean_data('support_emails.csv')
@@ -52,3 +54,6 @@ data.to_csv('classified_support_emails.csv', index=False)
 # Visualize the results
 plot_email_volume(summary_df)
 plot_automation_impact(summary_df)
+
+# Evaluate the model
+evaluate_model(data, model, tokenizer)
